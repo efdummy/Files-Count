@@ -15,7 +15,7 @@ namespace FilesCount
 
         static void Main(string[] args)
         {
-            string dirPath="";
+            string filesRepoPath="";
             string reportsPath="";
             bool areReportsRequired = false;
             bool isSplitted=false;
@@ -23,7 +23,7 @@ namespace FilesCount
 
             // Check params
             ArgsChecker checker = new ArgsChecker();
-            ArgsErrors rc = checker.CheckAndInit(args, ref dirPath, ref reportsPath, ref areReportsRequired, ref isSplitted, ref isStamp);
+            ArgsErrors rc = checker.CheckAndInit(args, ref filesRepoPath, ref reportsPath, ref areReportsRequired, ref isSplitted, ref isStamp);
 
             // I/O Manager
             Output output = new Output();
@@ -37,24 +37,39 @@ namespace FilesCount
                 IDictionary<string, int> results = new Dictionary<string, int>();
 
                 int dirCount = 0;
-                long fileCount=0;
+                long fileCount = 0;
+
+                // If split mode, delete previous .FilesCounter files
+                if (isSplitted) output.DeleteFilesCounterFiles(reportsPath);
 
                 Stopwatch chrono = new Stopwatch();
                 chrono.Start();
 
-                foreach (var packdir in Directory.EnumerateDirectories(dirPath))
+                foreach (var packdir in Directory.EnumerateDirectories(filesRepoPath))
                 {
+                    // Package count results
+                    IDictionary<string, int> packageResults = new Dictionary<string, int>();
                     dirCount++;
                     Console.WriteLine(dirCount+" "+Path.GetFileName(packdir));
                     try
                     {
+                        long packageFileCount = 0;
                         foreach (var file in Directory.EnumerateFiles(packdir, "*.*", SearchOption.AllDirectories))
                         {
+                            packageFileCount++;
                             fileCount++;
                             string ext = Path.GetExtension(file).ToUpper();
+                            // Package counters
+                            if (packageResults.ContainsKey(ext)) packageResults[ext]++;
+                            else packageResults.Add(ext, 1);
+                            // Global counters
                             if (results.ContainsKey(ext)) results[ext]++;
                             else results.Add(ext, 1);
                         }
+                        string prefix = Path.GetFileName(filesRepoPath);
+                        // Save package result
+                        output.SaveCounters(packageResults, prefix, Path.GetFileName(packdir), reportsPath, isSplitted, isStamp, packageFileCount);
+                        packageFileCount = 0;
                     }
                     catch (Exception e)
                     {
@@ -72,8 +87,8 @@ namespace FilesCount
                 }
                 else
                 {
-                    string prefix = Path.GetFileName(dirPath);
-                    output.SaveCounters(results, prefix, reportsPath, isSplitted, isStamp, fileCount);
+                    string prefix = Path.GetFileName(filesRepoPath);
+                    output.SaveCounters(results, prefix, "", reportsPath, isSplitted, isStamp, fileCount);
                     output.DisplayResultFilePath(prefix, reportsPath, isSplitted, isStamp);
                 }
                 // Display time used to count
