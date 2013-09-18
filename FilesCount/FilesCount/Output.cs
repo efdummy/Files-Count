@@ -47,7 +47,7 @@ namespace FilesCount
             WriteLine("Use SPLIT option as third arg to generate multiple .extcounter file for each counter.");
         }
 
-        // Output results to the screen
+        // Output global results to the screen
         public void DisplayCounters(IDictionary<string, int> results, long total)
         {
             foreach (var keyValue in results)
@@ -75,14 +75,30 @@ namespace FilesCount
                 WriteLine("Results in " + CsvFilePath(prefix, repPath, isStamp));
         }
 
-        // Save results to file(s)
-        public void SaveCounters(IDictionary<string, int> counters, string prefix, string repPath, bool isSplitted, bool isStamp, long total)
+        // Delete previous filecount files
+        public void DeleteFilesCounterFiles(string reportsPath)
+        {
+            // Delete any previous FilesCount file
+            string cfpattern = "*" + COUNTERFILE_EXT;
+            if (reportsPath.Length > 3)
+            {
+                WriteLine(String.Format("Deleting {0} file(s) in {1}...", cfpattern, reportsPath));
+                foreach (FileInfo f in new DirectoryInfo(reportsPath).GetFiles(cfpattern))
+                {
+                    f.Delete();
+                }
+            }
+        }
+
+        // Save global results or package results to file(s)
+        public void SaveCounters(IDictionary<string, int> counters, string fileNamePrefix, string optionalPackageName, string reportsPath, bool isSplitted, bool isStamp, long total)
         {
             StringBuilder sb = new StringBuilder();
             if (!isSplitted)
             {
                 // A unique csv file as report
-                String csvfilePath = CsvFilePath(prefix, repPath, isStamp);
+                String csvfilePath = CsvFilePath(fileNamePrefix, reportsPath, isStamp);
+                if (!String.IsNullOrEmpty(optionalPackageName)) csvfilePath=CsvFilePath(optionalPackageName, reportsPath, isStamp);
                 foreach (var keyValue in counters)
                 {
                     sb.Append(keyValue.Key);
@@ -99,29 +115,23 @@ namespace FilesCount
             {
                 // Multiple report files for each file extension
                 String reportfilePath;
-                // First delete any previous FilesCount file
+                // File name pattern
                 string cfpattern = "*" + COUNTERFILE_EXT;
-                if (repPath.Length > 3)
-                {
-                    WriteLine( String.Format("Deleting {0} files in {1}...", cfpattern, repPath));
-                    foreach (FileInfo f in new DirectoryInfo(repPath).GetFiles(cfpattern))
-                    {
-                        f.Delete();
-                    }
-                }
-                // Then create a #.ext.FilesCount file for each extension
-                WriteLine(String.Format("Create {0} files in {1}...", cfpattern, repPath));
+                if (!String.IsNullOrEmpty(optionalPackageName)) cfpattern = "*." + optionalPackageName + COUNTERFILE_EXT;
+
+                // Create a #.ext.FilesCount file for each extension
+                WriteLine(String.Format("Create {0} files in {1}...", cfpattern, reportsPath));
                 foreach (var keyValue in counters)
                 {
-                    reportfilePath = Path.Combine(repPath, keyValue.Value.ToString() + keyValue.Key + COUNTERFILE_EXT);
+                    reportfilePath = Path.Combine(reportsPath, keyValue.Value.ToString() + keyValue.Key + COUNTERFILE_EXT);
+                    if (!String.IsNullOrEmpty(optionalPackageName))
+                        reportfilePath = Path.Combine(reportsPath, keyValue.Value.ToString() + keyValue.Key + "." + optionalPackageName + COUNTERFILE_EXT);
                     File.CreateText(reportfilePath);
                 }
-                reportfilePath = Path.Combine(repPath, total+".#TOTAL#" + COUNTERFILE_EXT);
-                
+                //reportfilePath = Path.Combine(reportsPath, total+".#TOTAL#" + COUNTERFILE_EXT);
             }
 
         }
-
 
     }
 }
