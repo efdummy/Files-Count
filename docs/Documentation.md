@@ -1,5 +1,4 @@
 **USAGE**
-
 FilesCount counts all files in a directory with the number of files for each extension found in the subdirectories.
 It then displays or generates a csv report with the following report line format :
 
