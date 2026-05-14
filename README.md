@@ -4,3 +4,6 @@ It then displays the result or optionnaly generates a report file with all the d
 You can choose to generate 
 * one csv file, always with the same name, each time you "count" the files in the directory
 * one csv file with a different name including a timestamp each time you "count" the files in the directory
+
+See the following link for more details:
+https://github.com/efdummy/Files-Count/blob/master/docs/Documentation.md
